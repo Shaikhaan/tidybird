@@ -8,6 +8,12 @@ for example `Image\photo.jpg` and `Zip\backup.zip`.
 
 ![Tidybird window](screenshot.png)
 
+## Get the app
+
+Download [`dist/Tidybird.exe`](dist/Tidybird.exe) and double-click it. No install needed (Windows 10/11).
+If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**
+(the app is not code-signed).
+
 ## Features
 
 - **Preview** every file and where it will go before anything moves
@@ -32,6 +38,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
 This writes `dist\Tidybird.exe` and `dist\Tidybird.ico`, and redraws `logo.png`.
+Commit the rebuilt `dist\Tidybird.exe` so the download stays current.
 
 ## Test
 
