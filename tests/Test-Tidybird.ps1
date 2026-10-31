@@ -1,4 +1,4 @@
-# Tests for Tidybird. Runs against dist\Tidybird.exe in temporary folders only.
+﻿# Tests for Tidybird. Runs against dist\Tidybird.exe in temporary folders only.
 # Usage: powershell -NoProfile -STA -ExecutionPolicy Bypass -File tests\Test-Tidybird.ps1
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -39,12 +39,12 @@ $t = New-TestDir
 'Photo.JPG', 'README', '.gitignore', 'résumé été.pdf', 'a, b, c.txt', 'archive.tar.gz', 'x.' | ForEach-Object { New-File $t $_ | Out-Null }
 $r = Sort-All $t
 $files = Rel $t | Where-Object { $_ -notlike '.sort-logs*' }
-Check 'uppercase extension -> Images' ($files -contains 'Images\2026-10\Photo.JPG')
+Check 'uppercase extension -> Image' ($files -contains 'Image\2026-10\Photo.JPG')
 Check 'no extension -> Other' ($files -contains 'Other\2026-10\README')
 Check 'dotfile -> Other' ($files -contains 'Other\2026-10\.gitignore')
-Check 'unicode name sorted' ($files -contains 'Documents\2026-10\résumé été.pdf')
-Check 'comma in name sorted' ($files -contains 'Documents\2026-10\a, b, c.txt')
-Check '.tar.gz -> Archives' ($files -contains 'Archives\2026-10\archive.tar.gz')
+Check 'unicode name sorted' ($files -contains 'Document\2026-10\résumé été.pdf')
+Check 'comma in name sorted' ($files -contains 'Document\2026-10\a, b, c.txt')
+Check '.tar.gz -> Zip' ($files -contains 'Zip\2026-10\archive.tar.gz')
 Check 'undo restores odd names' (($S::Undo($t) -eq $r.Moved) -and ((Rel $t | Where-Object { $_ -notlike '.sort-logs*' }).Count -eq 7))
 Remove-Item -LiteralPath $t -Recurse -Force
 
@@ -72,8 +72,8 @@ New-File $t 'dup.jpg' | Out-Null
 $ro = New-File $t 'locked-down.pdf'; (Get-Item $ro).IsReadOnly = $true
 $r = $S::Apply("$t\", $S::Plan("$t\", 'yyyy-MM', [TimeSpan]::Zero))
 $files = Rel $t
-Check 'clash renamed to "dup (1).jpg"' (($files -contains 'Images\2026-10\dup.jpg') -and ($files -contains 'Images\2026-10\dup (1).jpg'))
-Check 'read-only file moved' ($files -contains 'Documents\2026-10\locked-down.pdf')
+Check 'clash renamed to "dup (1).jpg"' (($files -contains 'Image\2026-10\dup.jpg') -and ($files -contains 'Image\2026-10\dup (1).jpg'))
+Check 'read-only file moved' ($files -contains 'Document\2026-10\locked-down.pdf')
 Check 'trailing backslash folder works' ($r.Moved -eq 2)
 Get-ChildItem $t -Recurse -File | ForEach-Object { $_.IsReadOnly = $false }
 Remove-Item -LiteralPath $t -Recurse -Force
@@ -101,7 +101,7 @@ Remove-Item -LiteralPath $t -Recurse -Force
 $t = New-TestDir
 New-File $t 'keep.pdf' | Out-Null; New-File $t 'busy.pdf' | Out-Null
 Sort-All $t | Out-Null
-$fs = [IO.File]::Open((Join-Path $t 'Documents\2026-10\busy.pdf'), 'Open', 'Read', 'None')
+$fs = [IO.File]::Open((Join-Path $t 'Document\2026-10\busy.pdf'), 'Open', 'Read', 'None')
 $n1 = $S::Undo($t)
 $fs.Close()
 $n2 = $S::Undo($t)
@@ -112,14 +112,14 @@ Remove-Item -LiteralPath $t -Recurse -Force
 # --- User folders and non-empty category folders survive undo -------------------
 $t = New-TestDir
 New-Item -ItemType Directory "$t\My Stuff" | Out-Null
-New-Item -ItemType Directory "$t\Images\Wallpapers" | Out-Null
-New-File "$t\Images\Wallpapers" 'mine.png' | Out-Null
+New-Item -ItemType Directory "$t\Image\Wallpapers" | Out-Null
+New-File "$t\Image\Wallpapers" 'mine.png' | Out-Null
 New-File $t 'cat.png' | Out-Null
 Sort-All $t | Out-Null
 $S::Undo($t) | Out-Null
 Check 'undo keeps user folder' (Test-Path "$t\My Stuff")
-Check 'undo keeps user files inside category folder' (Test-Path "$t\Images\Wallpapers\mine.png")
-Check 'undo removes emptied date folder' (-not (Test-Path "$t\Images\2026-10"))
+Check 'undo keeps user files inside category folder' (Test-Path "$t\Image\Wallpapers\mine.png")
+Check 'undo removes emptied date folder' (-not (Test-Path "$t\Image\2026-10"))
 Remove-Item -LiteralPath $t -Recurse -Force
 
 # --- Log is compatible with Sort-Downloads.ps1 ----------------------------------
@@ -132,7 +132,31 @@ if (Test-Path $script) {
     Remove-Item -LiteralPath $t -Recurse -Force
 }
 
+# --- Type-only layout (the default) ---------------------------------------------
+$t = New-TestDir
+New-File $t 'song.mp3' | Out-Null; New-File $t 'pack.zip' | Out-Null; New-File $t 'odd.xyz' | Out-Null
+Sort-All $t '' | Out-Null
+$files = Rel $t | Where-Object { $_ -notlike '.sort-logs*' }
+Check 'type only: no date folders' (($files -contains 'Audio\song.mp3') -and ($files -contains 'Zip\pack.zip') -and ($files -contains 'Other\odd.xyz')) ($files -join ', ')
+$S::Undo($t) | Out-Null
+Check 'type only: undo removes emptied type folders' (-not (Get-ChildItem $t -Directory | Where-Object { 'Audio', 'Zip', 'Other' -contains $_.Name }))
+Remove-Item -LiteralPath $t -Recurse -Force
+
+# --- Undo of a run made with the old folder names still cleans up ---------------
+$t = New-TestDir
+New-Item -ItemType Directory "$t\Archives\2026-10" | Out-Null
+New-File "$t\Archives\2026-10" 'old.zip' | Out-Null
+New-Item -ItemType Directory "$t\.sort-logs" | Out-Null
+Set-Content "$t\.sort-logs\sort-20261001-120000-000.csv" "`"From`",`"To`"`r`n`"$t\old.zip`",`"$t\Archives\2026-10\old.zip`""
+Check 'legacy undo restores file' ($S::Undo($t) -eq 1 -and (Test-Path "$t\old.zip"))
+Check 'legacy undo removes old Archives folder' (-not (Test-Path "$t\Archives"))
+Remove-Item -LiteralPath $t -Recurse -Force
+
 # --- UI: preview is filled when the window first opens --------------------------
+# The window saves settings when options change, so restore the user's file after.
+$settingsFile = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Tidybird\settings.ini'
+$hadSettings = Test-Path $settingsFile
+if ($hadSettings) { $backup = [IO.File]::ReadAllBytes($settingsFile) }
 $t = New-TestDir
 New-File $t 'one.jpg' | Out-Null; New-File $t 'two.pdf' | Out-Null
 $type = $asm.GetType('Tidybird.MainForm')
@@ -147,16 +171,18 @@ $list = $type.GetField('list', $bf).GetValue($f)
 $f.Show(); 1..5 | ForEach-Object { [Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 50 }
 Check 'preview filled on first show' ($list.Items.Count -eq 2) "items: $($list.Items.Count)"
 Check 'window icon loaded from embedded resource' ($f.Icon.Width -eq 32)
+$dateBox = $type.GetField('dateBox', $bf).GetValue($f)
+Check 'first layout option is "Type only"' ($dateBox.Items[0] -eq 'Type only')
+$dateBox.SelectedIndex = 0
 
-# Auto-sort and undo through the window. These save settings, so restore the user's file after.
-$settingsFile = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Tidybird\settings.ini'
-$hadSettings = Test-Path $settingsFile
-if ($hadSettings) { $backup = Get-Content -Raw $settingsFile }
+# Auto-sort and undo through the window
 $status = $type.GetField('status', $bf).GetValue($f)
 $autoBox = $type.GetField('autoBox', $bf).GetValue($f)
+# Start from off so ticking it on always fires, whatever the user's saved setting is
+$autoBox.Checked = $false
 $autoBox.Checked = $true
 [Windows.Forms.Application]::DoEvents()
-Check 'auto-sort moves old files' ((Test-Path "$t\Images\2026-10\one.jpg") -and (Test-Path "$t\Documents\2026-10\two.pdf"))
+Check 'auto-sort moves old files' ((Test-Path "$t\Image\one.jpg") -and (Test-Path "$t\Document\two.pdf"))
 New-File $t 'brand-new.zip' (Get-Date) | Out-Null
 $type.GetMethod('AutoSortTick', $bf).Invoke($f, $null)
 Check 'auto-sort leaves just-downloaded file' (Test-Path "$t\brand-new.zip")
@@ -164,7 +190,7 @@ $type.GetMethod('UndoLast', $bf).Invoke($f, $null)
 Check 'undo pauses auto-sort' (-not $autoBox.Checked) "status: $($status.Text)"
 Check 'undo puts files back' ((Test-Path "$t\one.jpg") -and (Test-Path "$t\two.pdf"))
 $type.GetField('tray', $bf).GetValue($f).Visible = $false
-if ($hadSettings) { Set-Content -NoNewline $settingsFile $backup } else { Remove-Item (Split-Path $settingsFile) -Recurse -Force }
+if ($hadSettings) { [IO.File]::WriteAllBytes($settingsFile, $backup) } else { Remove-Item (Split-Path $settingsFile) -Recurse -Force }
 $f.Dispose()
 Remove-Item -LiteralPath $t -Recurse -Force
 

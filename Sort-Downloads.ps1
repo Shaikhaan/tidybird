@@ -1,9 +1,10 @@
-<#
+﻿<#
 .SYNOPSIS
-    Sorts files in a folder (default: your Downloads) into <Category>\<YYYY-MM>\ subfolders.
+    Sorts files in a folder (default: your Downloads) into type folders such as "Image".
 
 .DESCRIPTION
-    Category comes from the file extension. Date comes from the file's last-modified time.
+    Category comes from the file extension. With -DateFormat, files also go into a date
+    subfolder based on the file's last-modified time.
     Runs as a dry run unless -Apply is given. Every real run writes a CSV log of moves,
     which -Undo can replay in reverse.
 
@@ -11,15 +12,15 @@
     .\Sort-Downloads.ps1                 # preview what would move
     .\Sort-Downloads.ps1 -Apply          # move files
     .\Sort-Downloads.ps1 -Undo           # put back files from the latest run
-    .\Sort-Downloads.ps1 -Path D:\Inbox -DateFormat yyyy -Apply
+    .\Sort-Downloads.ps1 -Path D:\Inbox -DateFormat yyyy-MM -Apply   # type, then month
 #>
 [CmdletBinding()]
 param(
     [string]$Path = (Join-Path $env:USERPROFILE 'Downloads'),
     [switch]$Apply,
     [switch]$Undo,
-    # .NET date format for the date subfolder: 'yyyy-MM' (monthly), 'yyyy' (yearly), 'yyyy-MM-dd' (daily)
-    [string]$DateFormat = 'yyyy-MM',
+    # Optional date subfolder: '' (none, type only), 'yyyy-MM' (monthly), 'yyyy' (yearly), 'yyyy-MM-dd' (daily)
+    [string]$DateFormat = '',
     # Skip files modified more recently than this, so in-progress work is left alone
     [int]$MinAgeMinutes = 5
 )
@@ -27,19 +28,23 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $Categories = [ordered]@{
-    'Images'      = 'jpg','jpeg','png','gif','bmp','webp','svg','heic','tif','tiff','ico','raw'
-    'Videos'      = 'mp4','mkv','mov','avi','wmv','webm','flv','m4v'
+    'Image'       = 'jpg','jpeg','png','gif','bmp','webp','svg','heic','tif','tiff','ico','raw'
+    'Video'       = 'mp4','mkv','mov','avi','wmv','webm','flv','m4v'
     'Audio'       = 'mp3','wav','flac','aac','ogg','m4a','wma','opus'
-    'Documents'   = 'pdf','doc','docx','odt','rtf','txt','md','epub'
-    'Spreadsheets'= 'xls','xlsx','ods','csv','tsv'
-    'Slides'      = 'ppt','pptx','odp','key'
-    'Archives'    = 'zip','rar','7z','tar','gz','bz2','xz','tgz'
-    'Installers'  = 'exe','msi','msix','appx','dmg','pkg','deb','rpm','apk','iso'
+    'Document'    = 'pdf','doc','docx','odt','rtf','txt','md','epub'
+    'Spreadsheet' = 'xls','xlsx','ods','csv','tsv'
+    'Slide'       = 'ppt','pptx','odp','key'
+    'Zip'         = 'zip','rar','7z','tar','gz','bz2','xz','tgz'
+    'Installer'   = 'exe','msi','msix','appx','dmg','pkg','deb','rpm','apk','iso'
     'Code'        = 'py','js','ts','json','html','css','java','c','cpp','cs','go','rs','sh','ps1','ipynb','xml','yml','yaml','sql'
-    'Fonts'       = 'ttf','otf','woff','woff2'
-    'Torrents'    = 'torrent'
+    'Font'        = 'ttf','otf','woff','woff2'
+    'Torrent'     = 'torrent'
 }
 $OtherCategory = 'Other'
+# Folder names used by earlier versions; undo still tidies these up when they empty out
+$LegacyCategories = 'Images','Videos','Audio','Documents','Spreadsheets','Slides','Archives','Installers','Code','Fonts','Torrents','Other',
+    'Image Downloads','Video Downloads','Audio Downloads','Document Downloads','Spreadsheet Downloads','Slide Downloads',
+    'Zip Downloads','Installer Downloads','Code Downloads','Font Downloads','Torrent Downloads','Other Downloads'
 
 # Partial downloads and temp files: never touch these
 $SkipExtensions = 'crdownload','part','partial','tmp','download','opdownload','!ut'
@@ -91,7 +96,7 @@ if ($Undo) {
         $restored++
     }
     # Remove category/date folders left empty by the undo (deepest first)
-    $sortRoots = @($Categories.Keys) + $OtherCategory | ForEach-Object { Join-Path $Path $_ } |
+    $sortRoots = @($Categories.Keys) + $OtherCategory + $LegacyCategories | ForEach-Object { Join-Path $Path $_ } |
         Where-Object { Test-Path -LiteralPath $_ }
     @($sortRoots | Get-ChildItem -Directory -Recurse) + @($sortRoots | Get-Item) |
         Sort-Object { $_.FullName.Length } -Descending |
@@ -117,11 +122,12 @@ if (-not $files) { Write-Host 'Nothing to sort.'; return }
 
 $moves = foreach ($f in $files) {
     $category = Get-Category $f.Extension
-    $dateDir  = $f.LastWriteTime.ToString($DateFormat)
+    $destDir  = Join-Path $Path $category
+    if ($DateFormat) { $destDir = Join-Path $destDir $f.LastWriteTime.ToString($DateFormat) }
     [pscustomobject]@{
         File     = $f
         Category = $category
-        DestDir  = Join-Path (Join-Path $Path $category) $dateDir
+        DestDir  = $destDir
     }
 }
 

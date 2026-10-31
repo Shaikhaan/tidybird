@@ -28,19 +28,29 @@ namespace Tidybird
     {
         public static readonly KeyValuePair<string, string[]>[] Categories =
         {
-            Cat("Images", "jpg jpeg png gif bmp webp svg heic tif tiff ico raw"),
-            Cat("Videos", "mp4 mkv mov avi wmv webm flv m4v"),
+            Cat("Image", "jpg jpeg png gif bmp webp svg heic tif tiff ico raw"),
+            Cat("Video", "mp4 mkv mov avi wmv webm flv m4v"),
             Cat("Audio", "mp3 wav flac aac ogg m4a wma opus"),
-            Cat("Documents", "pdf doc docx odt rtf txt md epub"),
-            Cat("Spreadsheets", "xls xlsx ods csv tsv"),
-            Cat("Slides", "ppt pptx odp key"),
-            Cat("Archives", "zip rar 7z tar gz bz2 xz tgz"),
-            Cat("Installers", "exe msi msix appx dmg pkg deb rpm apk iso"),
+            Cat("Document", "pdf doc docx odt rtf txt md epub"),
+            Cat("Spreadsheet", "xls xlsx ods csv tsv"),
+            Cat("Slide", "ppt pptx odp key"),
+            Cat("Zip", "zip rar 7z tar gz bz2 xz tgz"),
+            Cat("Installer", "exe msi msix appx dmg pkg deb rpm apk iso"),
             Cat("Code", "py js ts json html css java c cpp cs go rs sh ps1 ipynb xml yml yaml sql"),
-            Cat("Fonts", "ttf otf woff woff2"),
-            Cat("Torrents", "torrent"),
+            Cat("Font", "ttf otf woff woff2"),
+            Cat("Torrent", "torrent"),
         };
         public const string OtherCategory = "Other";
+
+        // Folder names used by earlier versions; undo still tidies these up when they empty out
+        static readonly string[] LegacyCategories =
+        {
+            "Images", "Videos", "Audio", "Documents", "Spreadsheets", "Slides", "Archives",
+            "Installers", "Code", "Fonts", "Torrents", "Other",
+            "Image Downloads", "Video Downloads", "Audio Downloads", "Document Downloads",
+            "Spreadsheet Downloads", "Slide Downloads", "Zip Downloads", "Installer Downloads",
+            "Code Downloads", "Font Downloads", "Torrent Downloads", "Other Downloads"
+        };
         public const string LogDirName = ".sort-logs";
 
         // The running Tidybird.exe; never moved, even when it sits in the sorted folder
@@ -217,7 +227,7 @@ namespace Tidybird
         // Only category folders are pruned, never folders the user made
         static void RemoveEmptyCategoryFolders(string folder)
         {
-            var roots = Categories.Select(c => c.Key).Concat(new[] { OtherCategory })
+            var roots = Categories.Select(c => c.Key).Concat(new[] { OtherCategory }).Concat(LegacyCategories)
                 .Select(c => Path.Combine(folder, c)).Where(Directory.Exists);
             foreach (string root in roots)
             {

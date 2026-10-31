@@ -3,8 +3,8 @@
 <h1 align="center">Tidybird</h1>
 <p align="center">Your downloads, neatly nested.</p>
 
-Tidybird is a small Windows app that sorts your Downloads folder into
-`<Category>\<YYYY-MM>\` subfolders, for example `Images\2026-10\photo.jpg`.
+Tidybird is a small Windows app that sorts your Downloads folder by type,
+for example `Image\photo.jpg` and `Zip\backup.zip`.
 
 ![Tidybird window](screenshot.png)
 
@@ -14,14 +14,14 @@ Tidybird is a small Windows app that sorts your Downloads folder into
 - **Tidy up now** sorts in one click; **Undo last sort** puts files back, one run at a time
 - **Auto-sort** new downloads about a minute after they finish, from the system tray
 - **Start with Windows** (optional), hidden in the tray
-- Group by month, year, day, or not by date
+- Sorts by type only by default; can optionally add month, year or day subfolders
 - Never touches unfinished downloads (`.crdownload`, `.part`, `.tmp`), hidden files,
   files open in another program, subfolders, or its own exe
 - Never overwrites: name clashes become `name (1).ext`
 - Tiny: one ~60 KB exe, about 25 MB of memory, no install, no internet access
 
-Categories: Images, Videos, Audio, Documents, Spreadsheets, Slides, Archives,
-Installers, Code, Fonts, Torrents, Other. Edit them in `src/Sorter.cs`.
+Folders: Image, Video, Audio, Document, Spreadsheet, Slide, Zip, Installer, Code,
+Font, Torrent and Other. Edit them in `src/Sorter.cs`.
 
 ## Build
 

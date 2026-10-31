@@ -37,7 +37,7 @@ namespace Tidybird
     class Settings
     {
         public string Folder;
-        public string DateFormat = "yyyy-MM";
+        public string DateFormat = "";
         public bool AutoSort;
         public bool TrayTipShown;
 
@@ -116,10 +116,10 @@ namespace Tidybird
 
         static readonly KeyValuePair<string, string>[] DateOptions =
         {
-            new KeyValuePair<string, string>("Month  (2026-10)", "yyyy-MM"),
-            new KeyValuePair<string, string>("Year  (2026)", "yyyy"),
-            new KeyValuePair<string, string>("Day  (2026-10-31)", "yyyy-MM-dd"),
-            new KeyValuePair<string, string>("Don't group by date", ""),
+            new KeyValuePair<string, string>("Type only", ""),
+            new KeyValuePair<string, string>("Type, then month  (2026-10)", "yyyy-MM"),
+            new KeyValuePair<string, string>("Type, then year  (2026)", "yyyy"),
+            new KeyValuePair<string, string>("Type, then day  (2026-10-31)", "yyyy-MM-dd"),
         };
 
         readonly Settings settings = Settings.Load();
@@ -155,7 +155,8 @@ namespace Tidybird
             ResumeLayout(true);
 
             refreshTimer = new System.Windows.Forms.Timer { Interval = 800 };
-            refreshTimer.Tick += delegate { refreshTimer.Stop(); RefreshPreview(); };            autoTimer = new System.Windows.Forms.Timer { Interval = 20000 };
+            refreshTimer.Tick += delegate { refreshTimer.Stop(); RefreshPreview(); };
+            autoTimer = new System.Windows.Forms.Timer { Interval = 20000 };
             autoTimer.Tick += delegate { AutoSortTick(); };
             autoTimer.Start();
 
@@ -226,7 +227,7 @@ namespace Tidybird
             opts.Controls.Add(folderBox, 1, 0);
             opts.Controls.Add(browse, 2, 0);
 
-            dateBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220, Margin = new Padding(3, 5, 3, 3) };
+            dateBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260, Margin = new Padding(3, 5, 3, 3) };
             foreach (var o in DateOptions) dateBox.Items.Add(o.Key);
             dateBox.SelectedIndexChanged += delegate
             {
@@ -235,7 +236,7 @@ namespace Tidybird
                 settings.Save();
                 RefreshPreview();
             };
-            opts.Controls.Add(MakeLabel("Group by"), 0, 1);
+            opts.Controls.Add(MakeLabel("Sort into"), 0, 1);
             opts.Controls.Add(dateBox, 1, 1);
 
             var checks = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = false, Margin = new Padding(0, 4, 0, 0) };
