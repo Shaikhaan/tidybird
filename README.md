@@ -10,7 +10,8 @@ for example `Image\photo.jpg` and `Zip\backup.zip`.
 
 ## Get the app
 
-Download [`dist/Tidybird.exe`](dist/Tidybird.exe) and double-click it. No install needed (Windows 10/11).
+**[Download the latest release](https://github.com/Shaikhaan/tidybird/releases/latest)** (Tidybird.exe),
+or grab [`dist/Tidybird.exe`](dist/Tidybird.exe) from this repo, and double-click it. No install needed (Windows 10/11).
 If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**
 (the app is not code-signed).
 
